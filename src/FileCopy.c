@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-const static int MAX_FILE_NAME_LEN = 1024;
+const static int MAX_FILE_NAME_LEN = 4;
 
 /**
  * @brief `true` iff if given character ends `stdin` buffer.
@@ -62,20 +62,30 @@ char *readOneLineStdin(size_t maxLen)
     return line;
 }
 
+/**
+ * @brief Write prompt to `stdout`, read response from `stdin`.
+ *
+ * @param prompt Input prompt to display in `stdout`.
+ * @param maxLen Max length of response to read from `stdin`.
+ * @return char* Allocated buffer to be freed, as returned from `readOneLineStdin`.
+ */
+char *promptAndReadStdin(char *prompt, int maxLen)
+{
+    printf("%s", prompt);
+    fflush(stdout);
+    return readOneLineStdin(maxLen);
+}
+
 int main()
 {
-    printf("Enter src file: ");
-    fflush(stdout);
-    char *srcFileName = readOneLineStdin(MAX_FILE_NAME_LEN);
+    char *srcFileName = promptAndReadStdin("Enter src file: ", MAX_FILE_NAME_LEN);
     if (srcFileName == NULL)
     {
         exit(1);
     }
     printf("%s\n", srcFileName);
 
-    printf("Enter dest file: ");
-    fflush(stdout);
-    char *destFileName = readOneLineStdin(MAX_FILE_NAME_LEN);
+    char *destFileName = promptAndReadStdin("Enter dest file: ", MAX_FILE_NAME_LEN);
     if (destFileName == NULL)
     {
         free(srcFileName);
