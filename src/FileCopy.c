@@ -2,8 +2,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
-const static int MAX_FILE_NAME_LEN = 4;
+const static int MAX_FILE_NAME_LEN = 1024;
+
+bool isFile(const char *path)
+{
+    struct stat pathStat;
+    stat(path, &pathStat);
+    return S_ISREG(pathStat.st_mode);
+}
 
 /**
  * @brief `true` iff if given character ends `stdin` buffer.
@@ -48,7 +57,7 @@ char *readOneLineStdin(size_t maxLen)
 
     if ((nRead >= bufferLen && !isTerminal(line[nRead - 1])))
     {
-        fprintf(stderr, "file name length cannot exceed %lu bytes\n", maxLen);
+        fprintf(stderr, "[FileCopy] file name length cannot exceed %lu bytes\n", maxLen);
         flushStdin();
         free(line);
         return NULL;
@@ -76,6 +85,28 @@ char *promptAndReadStdin(char *prompt, int maxLen)
     return readOneLineStdin(maxLen);
 }
 
+/**
+ * @brief Copy contents of src file to dest file line-by-line.
+ *
+ * @param srcFile Src file object.
+ * @param destFile Dest file object.
+ * @return ssize_t Total number of bytes copied.
+ */
+ssize_t copySrcToDestFile(FILE *srcFile, FILE *destFile)
+{
+    size_t bufferSize = 0;
+    char *line = NULL;
+    ssize_t nRead, totalRead;
+    while ((nRead = getline(&line, &bufferSize, srcFile)) > 0)
+    {
+        totalRead += nRead;
+        fwrite(line, sizeof(char), nRead, destFile);
+    }
+
+    free(line);
+    return totalRead;
+}
+
 int main()
 {
     char *srcFileName = promptAndReadStdin("Enter src file: ", MAX_FILE_NAME_LEN);
@@ -83,7 +114,6 @@ int main()
     {
         exit(1);
     }
-    printf("%s\n", srcFileName);
 
     char *destFileName = promptAndReadStdin("Enter dest file: ", MAX_FILE_NAME_LEN);
     if (destFileName == NULL)
@@ -91,8 +121,32 @@ int main()
         free(srcFileName);
         exit(1);
     }
-    printf("%s\n", destFileName);
 
+    FILE *srcFile = fopen(srcFileName, "r");
+    if (srcFile == NULL || !isFile(srcFileName))
+    {
+        fprintf(stderr, "[FileCopy] unable to open src file `%s`\n", srcFileName);
+        free(srcFileName);
+        free(destFileName);
+        exit(1);
+    }
+
+    FILE *destFile = fopen(destFileName, "w");
+    if (destFile == NULL || !isFile(destFileName))
+    {
+        fprintf(stderr, "[FileCopy] unable to open dest file `%s`\n", destFileName);
+        fclose(srcFile);
+        free(srcFileName);
+        free(destFileName);
+        exit(1);
+    }
+
+    printf("Copying src file %s to dest file %s...\n", srcFileName, destFileName);
+    ssize_t totalCopied = copySrcToDestFile(srcFile, destFile);
+    printf("Copied %ld bytes from src file %s to dest file %s\n", totalCopied, srcFileName, destFileName);
+
+    fclose(srcFile);
+    fclose(destFile);
     free(srcFileName);
     free(destFileName);
     return 0;
