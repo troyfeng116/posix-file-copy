@@ -7,6 +7,12 @@
 
 const static int MAX_FILE_NAME_LEN = 1024;
 
+/**
+ * @brief Check if file object at relative path is a file.
+ *
+ * @param path Relative path to file.
+ * @return true iff file object at path is a file.
+ */
 bool isFile(const char *path)
 {
     struct stat pathStat;
