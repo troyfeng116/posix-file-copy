@@ -1,7 +1,7 @@
 SRC=src
 OBJ=build
 CC=gcc
-CFLAGS=-I$(SRC)
+CFLAGS=-I$(SRC) -lc
 
 $(OBJ)/FileCopy.o: $(SRC)/FileCopy.c
 	mkdir -p $(OBJ)
